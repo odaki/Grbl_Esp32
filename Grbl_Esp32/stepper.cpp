@@ -441,9 +441,7 @@ void stepper_init() {
     timer_enable_intr(STEP_TIMER_GROUP, STEP_TIMER_INDEX);
     timer_isr_register(STEP_TIMER_GROUP, STEP_TIMER_INDEX, onStepperDriverTimer, NULL, 0, NULL);
 #endif
-#ifdef USE_TRINAMIC
-    Trinamic_Init();
-#endif
+
 }
 
 
@@ -514,6 +512,7 @@ void set_stepper_pins_on(uint8_t onMask) {
         digitalWrite(Y2_STEP_PIN, (onMask & bit(Y_AXIS)));
 #endif
 #endif
+
 
 #ifdef Z_STEP_PIN
 #ifndef Z2_STEP_PIN // if not a ganged axis

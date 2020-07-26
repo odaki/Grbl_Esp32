@@ -374,6 +374,7 @@ void fast_sys_io_control(uint8_t io_num_mask, bool turnOn) {
 #endif
 }
 
+
 // Call this function to get an RMT channel number
 // returns -1 for error
 int8_t sys_get_next_RMT_chan_num() {
