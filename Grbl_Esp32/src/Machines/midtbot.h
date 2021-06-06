@@ -51,7 +51,6 @@
 // defaults
 #define DEFAULT_HOMING_CYCLE_0      bit(Y_AXIS)
 #define DEFAULT_HOMING_CYCLE_1      bit(X_AXIS)
-
 #define DEFAULT_HOMING_DIR_MASK     (bit(X_AXIS) | bit (Z_AXIS)) // these home negative
 
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3
@@ -93,5 +92,3 @@
 #define DEFAULT_X_MAX_TRAVEL 100.0 // mm NOTE: Must be a positive value.
 #define DEFAULT_Y_MAX_TRAVEL 100.0 // mm NOTE: Must be a positive value.
 #define DEFAULT_Z_MAX_TRAVEL 5.0 // This is percent in servo mode
-
-#define DEFAULT_Z_HOMING_MPOS 0.0
