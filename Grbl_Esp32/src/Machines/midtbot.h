@@ -77,8 +77,8 @@
 #define DEFAULT_HOMING_DEBOUNCE_DELAY   250 // msec (0-65k)
 #define DEFAULT_HOMING_PULLOFF          3.0 // mm
 
-#define DEFAULT_X_STEPS_PER_MM 100.0
-#define DEFAULT_Y_STEPS_PER_MM 100.0
+#define DEFAULT_X_STEPS_PER_MM 200.0
+#define DEFAULT_Y_STEPS_PER_MM 200.0
 #define DEFAULT_Z_STEPS_PER_MM 100.0 // This is percent in servo mode
 
 #define DEFAULT_X_MAX_RATE 8000.0 // mm/min
