@@ -76,6 +76,10 @@
 // ============= End CPU MAP ==================
 
 // ============= Begin Default Settings ================
+#define DEFAULT_HOMING_CYCLE_0      bit(X_AXIS)
+#define DEFAULT_HOMING_CYCLE_1      0
+#define DEFAULT_HOMING_DIR_MASK     bit(Z_AXIS)
+
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3
 #define DEFAULT_STEPPER_IDLE_LOCK_TIME 255 // stay on
 
@@ -95,7 +99,6 @@
 #define DEFAULT_HARD_LIMIT_ENABLE 0  // false
 
 #define DEFAULT_HOMING_ENABLE 1
-#define DEFAULT_HOMING_DIR_MASK 0 // move positive dir Z, negative X,Y
 #define DEFAULT_HOMING_FEED_RATE 200.0 // mm/min
 #define DEFAULT_HOMING_SEEK_RATE 1000.0 // mm/min
 #define DEFAULT_HOMING_DEBOUNCE_DELAY 250 // msec (0-65k)
@@ -121,5 +124,3 @@
 #define DEFAULT_X_MAX_TRAVEL 50.0 // mm NOTE: Must be a positive value.
 #define DEFAULT_Y_MAX_TRAVEL 300.0 // mm NOTE: Must be a positive value.
 #define DEFAULT_Z_MAX_TRAVEL 5.0 // This is percent in servo mode
-
-#define DEFAULT_Z_HOMING_MPOS DEFAULT_Z_MAX_TRAVEL // stays up after homing
