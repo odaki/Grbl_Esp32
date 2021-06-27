@@ -54,8 +54,8 @@
 // in Machines/polar_coaster.h, thus causing this file to be included
 // from ../custom_code.cpp
 
-void  calc_polar(float* target_xyz, float* polar, float last_angle);
-float abs_angle(float ang);
+static void  calc_polar(float* target_xyz, float* polar, float last_angle);
+static float abs_angle(float ang);
 
 static float last_angle  = 0.0f;
 static float last_radius = 0.0f;
@@ -212,7 +212,7 @@ void motors_to_cartesian(float* cartesian, float* motors, int n_axis) {
 *   a long job.
 *
 */
-void calc_polar(float* target_xyz, float* polar, float last_angle) {
+static void calc_polar(float* target_xyz, float* polar, float last_angle) {
     float delta_ang;  // the difference from the last and next angle
     polar[RADIUS_AXIS] = hypot_f(target_xyz[X_AXIS], target_xyz[Y_AXIS]);
     if (polar[RADIUS_AXIS] == 0) {
@@ -237,7 +237,7 @@ void calc_polar(float* target_xyz, float* polar, float last_angle) {
 }
 
 // Return a 0-360 angle ... fix above 360 and below zero
-float abs_angle(float ang) {
+static float abs_angle(float ang) {
     ang = fmod(ang, 360.0);  // 0-360 or 0 to -360
     if (ang < 0.0)
         ang = 360.0 + ang;
