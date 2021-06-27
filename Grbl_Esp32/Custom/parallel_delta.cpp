@@ -364,7 +364,7 @@ float three_axis_dist(float* point1, float* point2) {
 // #endif
 // }
 
-void kinematics_post_homing() {
+void kinematics_post_homing(uint8_t cycle_mask) {
 #ifdef USE_CUSTOM_HOMING
 
 #else

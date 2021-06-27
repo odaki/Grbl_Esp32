@@ -57,21 +57,34 @@
 void  calc_polar(float* target_xyz, float* polar, float last_angle);
 float abs_angle(float ang);
 
-static float last_angle  = 0;
-static float last_radius = 0;
+static float last_angle  = 0.0f;
+static float last_radius = 0.0f;
 
 // this get called before homing
 // return false to complete normal home
 // return true to exit normal homing
 bool kinematics_pre_homing(uint8_t cycle_mask) {
-    return false;  // finish normal homing cycle
+    bool rc = false;
+    if (cycle_mask == HOMING_CYCLE_ALL || bitnum_istrue(cycle_mask, RADIUS_AXIS)) {
+        sys_position[RADIUS_AXIS] = 0;
+        last_radius               = 0.0f;
+        // reset polar axis too
+        sys_position[POLAR_AXIS] = 0;
+        last_angle               = 0.0f;
+    }
+    if (bitnum_istrue(cycle_mask, POLAR_AXIS)) {
+        sys_position[POLAR_AXIS] = 0;
+        last_angle               = 0.0f;
+        rc                       = true;  // the homing is completed.
+    }
+    return rc;  // continue to the normal homing cycle
 }
 
-void kinematics_post_homing() {
-    // sync the X axis (do not need sync but make it for the fail safe)
-    last_radius = sys_position[X_AXIS];
-    // reset the internal angle value
-    last_angle = 0;
+void kinematics_post_homing(uint8_t cycle_mask) {
+    if (cycle_mask == HOMING_CYCLE_ALL || bitnum_istrue(cycle_mask, RADIUS_AXIS)) {
+        float x_offset = gc_state.coord_system[RADIUS_AXIS] + gc_state.coord_offset[RADIUS_AXIS];  // offset from machine coordinate system
+        last_radius    = sys_position[RADIUS_AXIS] / axis_settings[RADIUS_AXIS]->steps_per_mm->get() - x_offset;
+    }
 }
 
 /*
@@ -87,12 +100,9 @@ void kinematics_post_homing() {
 */
 
 bool cartesian_to_motors(float* target, plan_line_data_t* pl_data, float* position) {
-    float    dx, dy, dz;          // distances in each cartesian axis
-    float    p_dx, p_dy, p_dz;    // distances in each polar axis
-    float    dist, polar_dist;    // the distances in both systems...used to determine feed rate
-    uint32_t segment_count;       // number of segments the move will be broken in to.
-    float    seg_target[N_AXIS];  // The target of the current segment
-    float    polar[N_AXIS];       // target location in polar coordinates
+    float    dx, dy, dz;     // distances in each cartesian axis
+    float    dist;           // the distances in both systems...used to determine feed rate
+    uint32_t segment_count;  // number of segments the move will be broken in to.
     float    x_offset = gc_state.coord_system[X_AXIS] + gc_state.coord_offset[X_AXIS];  // offset from machine coordinate system
     float    z_offset = gc_state.coord_system[Z_AXIS] + gc_state.coord_offset[Z_AXIS];  // offset from machine coordinate system
     //grbl_sendf(CLIENT_SERIAL, "Position: %4.2f %4.2f %4.2f \r\n", position[X_AXIS] - x_offset, position[Y_AXIS], position[Z_AXIS]);
@@ -103,50 +113,56 @@ bool cartesian_to_motors(float* target, plan_line_data_t* pl_data, float* positi
     dz = target[Z_AXIS] - position[Z_AXIS];
     // calculate the total X,Y axis move distance
     // Z axis is the same in both coord systems, so it is ignored
-    dist = sqrt((dx * dx) + (dy * dy) + (dz * dz));
+    dist = sqrt((dx * dx) + (dy * dy));
     if (pl_data->motion.rapidMotion) {
         segment_count = 1;  // rapid G0 motion is not used to draw, so skip the segmentation
     } else {
         segment_count = ceil(dist / SEGMENT_LENGTH);  // determine the number of segments we need	... round up so there is at least 1
     }
     dist /= segment_count;  // segment distance
+
+    plan_line_data_t tmp_plan_data = *pl_data;  // struct copy to save original feed_rate
     for (uint32_t segment = 1; segment <= segment_count; segment++) {
         // determine this segment's target
+        float seg_target[N_AXIS];  // The target of the current segment
         seg_target[X_AXIS] = position[X_AXIS] + (dx / float(segment_count) * segment) - x_offset;
         seg_target[Y_AXIS] = position[Y_AXIS] + (dy / float(segment_count) * segment);
         seg_target[Z_AXIS] = position[Z_AXIS] + (dz / float(segment_count) * segment) - z_offset;
+
+        float polar[N_AXIS];  // target location in polar coordinates
         calc_polar(seg_target, polar, last_angle);
         // begin determining new feed rate
         // calculate move distance for each axis
-        p_dx                      = polar[RADIUS_AXIS] - last_radius;
-        p_dy                      = polar[POLAR_AXIS] - last_angle;
-        p_dz                      = dz;
-        polar_dist                = sqrt((p_dx * p_dx) + (p_dy * p_dy) + (p_dz * p_dz));  // calculate the total move distance
-        float polar_rate_multiply = 1.0;                                                  // fail safe rate
-        if (polar_dist == 0 || dist == 0) {
-            // prevent 0 feed rate and division by 0
-            polar_rate_multiply = 1.0;  // default to same feed rate
+        float p_dx, p_dy;  // distances in each polar axis
+        p_dx = polar[RADIUS_AXIS] - last_radius;
+        if (polar[RADIUS_AXIS] - last_radius <= 180.0f) {
+            p_dy = sin(radians(polar[POLAR_AXIS])) * polar[RADIUS_AXIS] - sin(radians(last_angle)) * last_radius;
         } else {
+            p_dy = sin(radians(last_angle)) * last_radius - sin(radians(polar[POLAR_AXIS])) * polar[RADIUS_AXIS];
+        }
+        float polar_dist          = sqrt((p_dx * p_dx) + (p_dy * p_dy));  // calculate the total move distance
+        float polar_rate_multiply = 1.0f;
+        if (polar_dist != 0.0f && dist != 0.0f) {
             // calc a feed rate multiplier
             polar_rate_multiply = polar_dist / dist;
-            if (polar_rate_multiply < 0.5) {
+            if (polar_rate_multiply < 0.5f) {
                 // prevent much slower speed
-                polar_rate_multiply = 0.5;
+                polar_rate_multiply = 0.5f;
             }
         }
-        pl_data->feed_rate *= polar_rate_multiply;  // apply the distance ratio between coord systems
+        tmp_plan_data.feed_rate = pl_data->feed_rate * polar_rate_multiply;  // apply the distance ratio between coord systems
         // end determining new feed rate
         polar[RADIUS_AXIS] += x_offset;
         polar[Z_AXIS] += z_offset;
 
         // mc_line() returns false if a jog is cancelled.
         // In that case we stop sending segments to the planner.
-        if (!mc_line(polar, pl_data)) {
+        if (!mc_line(polar, &tmp_plan_data)) {
             return false;
         }
 
         //
-        last_radius = polar[RADIUS_AXIS];
+        last_radius = polar[RADIUS_AXIS] - x_offset;
         last_angle  = polar[POLAR_AXIS];
     }
     // TO DO don't need a feedrate for rapids
@@ -167,8 +183,17 @@ converted = position with forward kinematics applied.
 
 */
 void motors_to_cartesian(float* cartesian, float* motors, int n_axis) {
-    cartesian[X_AXIS] = cos(radians(motors[Y_AXIS])) * motors[X_AXIS] * -1;
-    cartesian[Y_AXIS] = sin(radians(motors[Y_AXIS])) * motors[X_AXIS];
+    const float mm_per_rotation = 90.0f * 4;
+    float       x_offset        = gc_state.coord_system[X_AXIS] + gc_state.coord_offset[X_AXIS];  // offset from machine coordinate system
+
+    float angle = 360.0f * fmod(motors[Y_AXIS], mm_per_rotation) / mm_per_rotation;
+    float r     = motors[X_AXIS] - x_offset;
+
+    float x = cos(radians(angle)) * r;
+    float y = sin(radians(angle)) * r;
+
+    cartesian[X_AXIS] = -x;
+    cartesian[Y_AXIS] = y;
     cartesian[Z_AXIS] = motors[Z_AXIS];  // unchanged
 }
 

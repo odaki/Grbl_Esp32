@@ -103,7 +103,7 @@ bool user_defined_homing(uint8_t cycle_mask);  // weak definition in Limits.cpp
 // weak definitions in MotionControl.cpp
 bool cartesian_to_motors(float* target, plan_line_data_t* pl_data, float* position);
 bool kinematics_pre_homing(uint8_t cycle_mask);
-void kinematics_post_homing();
+void kinematics_post_homing(uint8_t cycle_mask);
 
 bool limitsCheckTravel(float* target);  // weak in Limits.cpp; true if out of range
 

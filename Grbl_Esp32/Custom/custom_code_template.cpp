@@ -103,7 +103,7 @@ bool kinematics_pre_homing(uint8_t cycle_mask) {
 /*
   kinematics_post_homing() is called at the end of normal homing
 */
-void kinematics_post_homing() {}
+void kinematics_post_homing(uint8_t cycle_mask) {}
 
 /*
   The status command uses motors_to_cartesian() to convert

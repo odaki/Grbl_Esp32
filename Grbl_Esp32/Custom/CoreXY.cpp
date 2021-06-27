@@ -248,7 +248,7 @@ bool user_defined_homing(uint8_t cycle_mask) {
 
     gc_sync_position();
     plan_sync_position();
-    kinematics_post_homing();
+    kinematics_post_homing(cycle_mask);
     limits_init();
 
     return true;
@@ -307,7 +307,7 @@ bool kinematics_pre_homing(uint8_t cycle_mask) {
     return false;
 }
 
-void kinematics_post_homing() {
+void kinematics_post_homing(uint8_t cycle_mask) {
     auto n_axis = number_axis->get();
     memcpy(gc_state.position, last_cartesian, n_axis * sizeof(last_cartesian[0]));
 }

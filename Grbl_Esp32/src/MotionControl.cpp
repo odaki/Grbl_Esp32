@@ -103,7 +103,7 @@ bool __attribute__((weak)) kinematics_pre_homing(uint8_t cycle_mask) {
     return false;  // finish normal homing cycle
 }
 
-void __attribute__((weak)) kinematics_post_homing() {}
+void __attribute__((weak)) kinematics_post_homing(uint8_t cycle_mask) {}
 
 void __attribute__((weak)) motors_to_cartesian(float* cartesian, float* motors, int n_axis) {
     memcpy(cartesian, motors, n_axis * sizeof(motors[0]));
@@ -376,7 +376,7 @@ void mc_homing_cycle(uint8_t cycle_mask) {
     gc_sync_position();
     plan_sync_position();
     // This give kinematics a chance to do something after normal homing
-    kinematics_post_homing();
+    kinematics_post_homing(cycle_mask);
     // If hard limits feature enabled, re-enable hard limits pin change register after homing cycle.
     limits_init();
 }
